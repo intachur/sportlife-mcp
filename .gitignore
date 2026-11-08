@@ -1,0 +1,20 @@
+# Build artifacts
+sources/target/
+
+# Secrets
+sources/deploy/sportlife.env
+*.env
+!*.env.example
+
+# Traffic dump (contains auth token in request headers) — kept locally, not published
+mtproxy/
+
+# Local agent/tooling state
+.superpowers/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.log

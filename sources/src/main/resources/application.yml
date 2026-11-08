@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: sportlife-mcp
+  datasource:
+    url: ${SPORTLIFE_DB_URL:jdbc:postgresql://localhost:5432/sportlife}
+    username: ${SPORTLIFE_DB_USER:sportlife}
+    password: ${SPORTLIFE_DB_PASSWORD:sportlife}
+  flyway:
+    enabled: true
+  ai:
+    mcp:
+      server:
+        name: sportlife-mcp
+        version: 1.0.0
+        protocol: STREAMABLE
+        type: SYNC
+
+sportlife:
+  base-url: https://sync.sportlifeclub.ru
+  auth-token: ${SPORTLIFE_AUTH_TOKEN:}
+  club-id: "6"
+  platform: ios
+  app-version: 3.9.10
+  zone-id: Europe/Moscow
+  connect-timeout: 5s
+  read-timeout: 15s
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

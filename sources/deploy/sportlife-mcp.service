@@ -1,0 +1,20 @@
+[Unit]
+Description=SportLife MCP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chur
+Group=chur
+WorkingDirectory=/opt/sportlife
+EnvironmentFile=-/opt/sportlife/sportlife.env
+ExecStart=/usr/bin/java -jar /opt/sportlife/sportlife-mcp.jar
+StandardOutput=append:/opt/sportlife/logs/app.log
+StandardError=append:/opt/sportlife/logs/app.log
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
