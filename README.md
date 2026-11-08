@@ -27,9 +27,11 @@ ClubTools (@Tool) → VisitorService / ClubEventService → SportlifeClient (Res
 
 - Java 21
 - Maven 3.9+
-- PostgreSQL (для хранения статистики; без него MCP-инструменты, читающие только API, работают)
+- PostgreSQL (нужен для запуска: Flyway прогоняет миграции при старте)
 
 ## Запуск
+
+Maven-проект лежит в подкаталоге [`sources/`](sources) — команды выполняются оттуда.
 
 ```bash
 export SPORTLIFE_AUTH_TOKEN=<токен>
@@ -42,8 +44,6 @@ mvn spring-boot:run
 mvn -DskipTests package
 SPORTLIFE_AUTH_TOKEN=<токен> java -jar target/sportlife-mcp.jar
 ```
-
-Проект лежит в подкаталоге [`sources/`](sources), команды Maven запускаются оттуда.
 
 ## Конфигурация
 
@@ -114,3 +114,7 @@ mvn test
 ## Дисклеймер
 
 Проект использует неофициальный API мобильного приложения SportLife и требует личного токена авторизации. Токен не хранится в репозитории.
+
+## Лицензия
+
+[MIT](LICENSE) © 2026 Sergey Churikov

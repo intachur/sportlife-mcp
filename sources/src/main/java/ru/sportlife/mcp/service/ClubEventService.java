@@ -30,15 +30,14 @@ public class ClubEventService {
         this.repository = repository;
     }
 
-    public List<Activity> todayEvents() {
-        LocalDate today = LocalDate.now(zone());
-        List<Activity> activities = client.getActivities(today);
+    public List<Activity> todayEvents(LocalDate date) {
+        List<Activity> activities = client.getActivities(date);
         try {
             repository.upsertAll(properties.clubId(), activities.stream()
-                    .map(activity -> toRecord(activity, today))
+                    .map(activity -> toRecord(activity, date))
                     .toList());
         } catch (RuntimeException e) {
-            log.warn("Failed to persist club events for club {} on {}", properties.clubId(), today, e);
+            log.warn("Failed to persist club events for club {} on {}", properties.clubId(), date, e);
         }
         return activities;
     }

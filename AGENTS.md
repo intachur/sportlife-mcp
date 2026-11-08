@@ -103,7 +103,7 @@ PostgreSQL, миграции Flyway в `src/main/resources/db/migration`.
 
 `deploy/`:
 
-- `sportlife-mcp.service` — systemd unit (user `chur`, `/usr/bin/java`, `/opt/sportlife`, лог `/opt/sportlife/logs/app.log`).
+- `sportlife-mcp.service` — systemd unit (user `chur` по умолчанию, переопределяется `SPORTLIFE_USER`; `/usr/bin/java`, `/opt/sportlife`, лог `/opt/sportlife/logs/app.log`).
 - `install.sh` — создаёт пользователя, каталоги, копирует jar и unit, `systemctl enable` + `restart`.
 - `sportlife.env` — реальные секреты (gitignored), `sportlife.env.example` — шаблон.
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="sportlife-mcp"
-APP_USER="chur"
+APP_USER="${SPORTLIFE_USER:-chur}"
 APP_DIR="/opt/sportlife"
 JAR_NAME="sportlife-mcp.jar"
 
@@ -33,7 +33,10 @@ if [[ ! -f "${APP_DIR}/sportlife.env" ]]; then
     echo "Created ${APP_DIR}/sportlife.env. Set SPORTLIFE_AUTH_TOKEN there."
 fi
 
-sudo install -m 0644 "${SERVICE_SOURCE}" "/etc/systemd/system/${APP_NAME}.service"
+UNIT_TMP="$(mktemp)"
+sed -e "s|^User=.*|User=${APP_USER}|" -e "s|^Group=.*|Group=${APP_USER}|" "${SERVICE_SOURCE}" > "${UNIT_TMP}"
+sudo install -m 0644 "${UNIT_TMP}" "/etc/systemd/system/${APP_NAME}.service"
+rm -f "${UNIT_TMP}"
 sudo systemctl daemon-reload
 sudo systemctl enable "${APP_NAME}"
 sudo systemctl restart "${APP_NAME}"

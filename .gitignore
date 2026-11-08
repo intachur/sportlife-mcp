@@ -18,3 +18,4 @@ mtproxy/
 .vscode/
 *.iml
 *.log
+/MEMORY.md

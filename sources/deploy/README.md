@@ -4,7 +4,7 @@
 
 | Параметр | Значение |
 |---|---|
-| Пользователь ОС | `chur` |
+| Пользователь ОС | `chur` (переопределяется переменной `SPORTLIFE_USER`) |
 | Java | `/usr/bin/java` |
 | Каталог приложения | `/opt/sportlife` |
 | Jar | `/opt/sportlife/sportlife-mcp.jar` |

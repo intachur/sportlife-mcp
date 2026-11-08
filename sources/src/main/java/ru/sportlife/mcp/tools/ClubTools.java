@@ -95,7 +95,7 @@ public class ClubTools {
     public String getTodayClubEvents() {
         try {
             LocalDate today = LocalDate.now(zone());
-            List<Activity> activities = clubEventService.todayEvents();
+            List<Activity> activities = clubEventService.todayEvents(today);
 
             ObjectNode result = objectMapper.createObjectNode();
             result.put("date", today.toString());

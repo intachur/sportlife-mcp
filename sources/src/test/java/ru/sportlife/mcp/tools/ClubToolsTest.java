@@ -1,10 +1,12 @@
 package ru.sportlife.mcp.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -94,7 +96,7 @@ class ClubToolsTest {
 
     @Test
     void getTodayClubEventsReturnsActivities() throws Exception {
-        when(clubEventService.todayEvents()).thenReturn(List.of(
+        when(clubEventService.todayEvents(any(LocalDate.class))).thenReturn(List.of(
                 new Activity("1", "Йога", "2026-11-03T10:00:00.000", "2026-11-03T11:00:00.000",
                         "Зал №1", "Иванов Иван")));
 
@@ -107,7 +109,7 @@ class ClubToolsTest {
 
     @Test
     void getTodayClubEventsReturnsEmptyList() throws Exception {
-        when(clubEventService.todayEvents()).thenReturn(List.of());
+        when(clubEventService.todayEvents(any(LocalDate.class))).thenReturn(List.of());
 
         JsonNode result = objectMapper.readTree(tools.getTodayClubEvents());
 

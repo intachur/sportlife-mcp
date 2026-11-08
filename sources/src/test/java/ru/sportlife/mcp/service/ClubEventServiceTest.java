@@ -52,7 +52,7 @@ class ClubEventServiceTest {
                 new Activity("1", "Йога", "2026-11-03T10:00:00.000", "2026-11-03T11:00:00.000",
                         "Зал №1", "Иванов Иван")));
 
-        List<Activity> activities = service.todayEvents();
+        List<Activity> activities = service.todayEvents(LocalDate.of(2026, 11, 3));
 
         assertThat(activities).hasSize(1);
         @SuppressWarnings("unchecked")
@@ -73,6 +73,6 @@ class ClubEventServiceTest {
         doThrow(new IllegalStateException("db down"))
                 .when(repository).upsertAll(eq("6"), any());
 
-        assertThat(service.todayEvents()).hasSize(1);
+        assertThat(service.todayEvents(LocalDate.of(2026, 11, 3))).hasSize(1);
     }
 }
