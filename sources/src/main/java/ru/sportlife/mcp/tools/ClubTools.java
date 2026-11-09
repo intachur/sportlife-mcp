@@ -21,6 +21,13 @@ import ru.sportlife.mcp.model.Club;
 import ru.sportlife.mcp.model.ClubCard;
 import ru.sportlife.mcp.model.Contract;
 import ru.sportlife.mcp.model.Masseur;
+import ru.sportlife.mcp.model.MasseurClub;
+import ru.sportlife.mcp.model.MasseurDetail;
+import ru.sportlife.mcp.model.MasseurScheduleDay;
+import ru.sportlife.mcp.model.MasseurSlot;
+import ru.sportlife.mcp.model.Trainer;
+import ru.sportlife.mcp.model.TrainerActivity;
+import ru.sportlife.mcp.model.TrainerDetail;
 import ru.sportlife.mcp.model.VisitorPoint;
 import ru.sportlife.mcp.model.VisitorStatistics;
 import ru.sportlife.mcp.service.ClubEventService;
@@ -91,10 +98,12 @@ public class ClubTools {
     }
 
     @Tool(name = "get_today_club_events",
-            description = "Club activities and events scheduled for today")
-    public String getTodayClubEvents() {
+            description = "Club activities and events for a date (defaults to today)")
+    public String getTodayClubEvents(
+            @ToolParam(required = false, description = "Day in ISO format (yyyy-MM-dd). Omit for today")
+                    String date) {
         try {
-            LocalDate today = LocalDate.now(zone());
+            LocalDate today = (date == null || date.isBlank()) ? LocalDate.now(zone()) : LocalDate.parse(date);
             List<Activity> activities = clubEventService.todayEvents(today);
 
             ObjectNode result = objectMapper.createObjectNode();
@@ -126,6 +135,7 @@ public class ClubTools {
             ArrayNode specialists = result.putArray("specialists");
             for (Masseur masseur : masseurs) {
                 ObjectNode specialist = specialists.addObject();
+                specialist.put("id", masseur.id());
                 specialist.put("name", masseur.name());
                 specialist.put("hall", masseur.hallName());
                 specialist.put("availableDate", masseur.availableDate());
@@ -133,6 +143,107 @@ public class ClubTools {
             return result.toString();
         } catch (RuntimeException e) {
             return error("get_body_care_specialists", e);
+        }
+    }
+
+    @Tool(name = "get_specialist_schedule",
+            description = "Body care specialist details and appointment slots by day")
+    public String getSpecialistSchedule(
+            @ToolParam(description = "Specialist id from get_body_care_specialists") String masseurId,
+            @ToolParam(required = false, description = "Day in ISO format (yyyy-MM-dd). Omit to return all days")
+                    String date) {
+        try {
+            MasseurDetail detail = client.getMasseurDetail(masseurId);
+
+            ObjectNode result = objectMapper.createObjectNode();
+            result.put("specialistId", detail.id());
+            result.put("name", detail.name());
+            result.put("description", detail.description());
+            result.put("price", detail.price());
+            result.put("specialization", detail.resume().specialization());
+            result.put("education", detail.resume().education());
+            result.put("experience", detail.resume().experience());
+            ArrayNode schedule = result.putArray("schedule");
+            for (MasseurScheduleDay day : detail.schedule()) {
+                if (date != null && !date.isBlank() && !day.date().startsWith(date)) {
+                    continue;
+                }
+                ObjectNode dayNode = schedule.addObject();
+                dayNode.put("date", day.date());
+                ArrayNode clubs = dayNode.putArray("clubs");
+                for (MasseurClub club : day.clubs()) {
+                    ObjectNode clubNode = clubs.addObject();
+                    clubNode.put("club", club.clubName());
+                    ArrayNode slots = clubNode.putArray("slots");
+                    for (MasseurSlot slot : club.slots()) {
+                        ObjectNode slotNode = slots.addObject();
+                        slotNode.put("id", slot.id());
+                        slotNode.put("time", slot.time());
+                        slotNode.put("available", slot.available());
+                    }
+                }
+            }
+            return result.toString();
+        } catch (RuntimeException e) {
+            return error("get_specialist_schedule", e);
+        }
+    }
+
+    @Tool(name = "get_trainers",
+            description = "Club personal trainers with speciality and price")
+    public String getTrainers() {
+        try {
+            List<Trainer> trainers = client.getTrainers();
+
+            ObjectNode result = objectMapper.createObjectNode();
+            result.put("clubId", properties.clubId());
+            ArrayNode list = result.putArray("trainers");
+            for (Trainer trainer : trainers) {
+                ObjectNode item = list.addObject();
+                item.put("id", trainer.id());
+                item.put("name", trainer.name());
+                item.put("speciality", trainer.speciality());
+                item.put("price", trainer.price());
+                item.put("rating", trainer.rating());
+                item.put("type", trainer.type());
+            }
+            return result.toString();
+        } catch (RuntimeException e) {
+            return error("get_trainers", e);
+        }
+    }
+
+    @Tool(name = "get_trainer",
+            description = "Trainer details: specialisation, education, clubs and nearest activities")
+    public String getTrainer(
+            @ToolParam(description = "Trainer id from get_trainers") String trainerId) {
+        try {
+            TrainerDetail detail = client.getTrainer(trainerId);
+
+            ObjectNode result = objectMapper.createObjectNode();
+            result.put("trainerId", detail.id());
+            result.put("name", detail.name());
+            result.put("speciality", detail.speciality());
+            result.put("price", detail.price());
+            result.put("rating", detail.rating());
+            result.put("type", detail.type());
+            result.put("education", detail.education());
+            result.put("experience", detail.experience());
+            ArrayNode clubs = result.putArray("clubs");
+            for (String club : detail.clubs()) {
+                clubs.add(club);
+            }
+            ArrayNode activities = result.putArray("activities");
+            for (TrainerActivity activity : detail.activities()) {
+                ObjectNode item = activities.addObject();
+                item.put("name", activity.name());
+                item.put("start", activity.date());
+                item.put("hall", activity.hall());
+                item.put("club", activity.club());
+            }
+            return result.toString();
+        } catch (RuntimeException e) {
+            return error("get_trainer", e);
         }
     }
 

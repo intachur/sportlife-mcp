@@ -23,6 +23,14 @@ import ru.sportlife.mcp.model.Club;
 import ru.sportlife.mcp.model.ClubCard;
 import ru.sportlife.mcp.model.Contract;
 import ru.sportlife.mcp.model.Masseur;
+import ru.sportlife.mcp.model.MasseurClub;
+import ru.sportlife.mcp.model.MasseurDetail;
+import ru.sportlife.mcp.model.MasseurResume;
+import ru.sportlife.mcp.model.MasseurScheduleDay;
+import ru.sportlife.mcp.model.MasseurSlot;
+import ru.sportlife.mcp.model.Trainer;
+import ru.sportlife.mcp.model.TrainerActivity;
+import ru.sportlife.mcp.model.TrainerDetail;
 import ru.sportlife.mcp.model.VisitorPoint;
 import ru.sportlife.mcp.model.VisitorStatistics;
 import ru.sportlife.mcp.service.ClubEventService;
@@ -100,7 +108,7 @@ class ClubToolsTest {
                 new Activity("1", "Йога", "2026-11-03T10:00:00.000", "2026-11-03T11:00:00.000",
                         "Зал №1", "Иванов Иван")));
 
-        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents());
+        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents(null));
 
         assertThat(result.path("events")).hasSize(1);
         assertThat(result.path("events").get(0).path("name").asText()).isEqualTo("Йога");
@@ -108,10 +116,27 @@ class ClubToolsTest {
     }
 
     @Test
+    void getTodayClubEventsReturnsRequestedDate() throws Exception {
+        when(clubEventService.todayEvents(LocalDate.of(2026, 11, 10))).thenReturn(List.of());
+
+        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents("2026-11-10"));
+
+        assertThat(result.path("date").asText()).isEqualTo("2026-11-10");
+        assertThat(result.path("events")).isEmpty();
+    }
+
+    @Test
+    void getTodayClubEventsReportsInvalidDate() throws Exception {
+        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents("not-a-date"));
+
+        assertThat(result.path("error").asText()).contains("not-a-date");
+    }
+
+    @Test
     void getTodayClubEventsReturnsEmptyList() throws Exception {
         when(clubEventService.todayEvents(any(LocalDate.class))).thenReturn(List.of());
 
-        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents());
+        JsonNode result = objectMapper.readTree(tools.getTodayClubEvents(null));
 
         assertThat(result.path("events")).isEmpty();
     }
@@ -125,7 +150,92 @@ class ClubToolsTest {
         JsonNode result = objectMapper.readTree(tools.getBodyCareSpecialists());
 
         assertThat(result.path("specialists")).hasSize(1);
+        assertThat(result.path("specialists").get(0).path("id").asText()).isEqualTo("12475");
         assertThat(result.path("specialists").get(0).path("name").asText()).isEqualTo("Смирнова Марина");
+    }
+
+    @Test
+    void getSpecialistScheduleReturnsDetailsAndSlots() throws Exception {
+        when(client.getMasseurDetail("9836")).thenReturn(new MasseurDetail(
+                "9836", "Старостина Елена", "Специалист по уходу за телом", "1900",
+                new MasseurResume("Классический массаж", "Школа мастеров", "Стаж с 2018 года"),
+                List.of(new MasseurScheduleDay("2026-11-09T00:00:00.000", List.of(
+                        new MasseurClub("Меркурий", List.of(
+                                new MasseurSlot("S74964T800", "8:00", true),
+                                new MasseurSlot("S74964T1100", "11:00", false))))))));
+
+        JsonNode result = objectMapper.readTree(tools.getSpecialistSchedule("9836", null));
+
+        assertThat(result.path("name").asText()).isEqualTo("Старостина Елена");
+        assertThat(result.path("price").asText()).isEqualTo("1900");
+        assertThat(result.path("experience").asText()).isEqualTo("Стаж с 2018 года");
+        assertThat(result.path("schedule")).hasSize(1);
+        assertThat(result.path("schedule").get(0).path("clubs").get(0).path("club").asText()).isEqualTo("Меркурий");
+        assertThat(result.path("schedule").get(0).path("clubs").get(0).path("slots")).hasSize(2);
+        assertThat(result.path("schedule").get(0).path("clubs").get(0).path("slots").get(0).path("available").asBoolean()).isTrue();
+    }
+
+    @Test
+    void getSpecialistScheduleFiltersByDate() throws Exception {
+        when(client.getMasseurDetail("9836")).thenReturn(new MasseurDetail(
+                "9836", "Старостина Елена", "desc", "1900",
+                new MasseurResume("", "", ""),
+                List.of(
+                        new MasseurScheduleDay("2026-11-09T00:00:00.000", List.of()),
+                        new MasseurScheduleDay("2026-11-10T00:00:00.000", List.of()))));
+
+        JsonNode result = objectMapper.readTree(tools.getSpecialistSchedule("9836", "2026-11-10"));
+
+        assertThat(result.path("schedule")).hasSize(1);
+        assertThat(result.path("schedule").get(0).path("date").asText()).startsWith("2026-11-10");
+    }
+
+    @Test
+    void getSpecialistScheduleReportsError() throws Exception {
+        when(client.getMasseurDetail("99999")).thenThrow(new IllegalStateException("SportLife API error"));
+
+        JsonNode result = objectMapper.readTree(tools.getSpecialistSchedule("99999", null));
+
+        assertThat(result.path("error").asText()).contains("SportLife API error");
+    }
+
+    @Test
+    void getTrainersReturnsList() throws Exception {
+        when(client.getTrainers()).thenReturn(List.of(
+                new Trainer("214", "Максимчук Наталья", "Силовой тренинг", 3800, "4,4", "both")));
+
+        JsonNode result = objectMapper.readTree(tools.getTrainers());
+
+        assertThat(result.path("trainers")).hasSize(1);
+        assertThat(result.path("trainers").get(0).path("id").asText()).isEqualTo("214");
+        assertThat(result.path("trainers").get(0).path("name").asText()).isEqualTo("Максимчук Наталья");
+        assertThat(result.path("trainers").get(0).path("price").asInt()).isEqualTo(3800);
+    }
+
+    @Test
+    void getTrainerReturnsCardWithActivities() throws Exception {
+        when(client.getTrainer("214")).thenReturn(new TrainerDetail(
+                "214", "Максимчук Наталья", "Силовой тренинг", "Колледж", "с 2005 года", 3800, "4,4", "both",
+                List.of("Меркурий"),
+                List.of(new TrainerActivity("Круговая", "2026-11-09T08:00:00.000",
+                        "Круговые тренировки", "Меркурий"))));
+
+        JsonNode result = objectMapper.readTree(tools.getTrainer("214"));
+
+        assertThat(result.path("name").asText()).isEqualTo("Максимчук Наталья");
+        assertThat(result.path("clubs").get(0).asText()).isEqualTo("Меркурий");
+        assertThat(result.path("activities")).hasSize(1);
+        assertThat(result.path("activities").get(0).path("name").asText()).isEqualTo("Круговая");
+        assertThat(result.path("activities").get(0).path("club").asText()).isEqualTo("Меркурий");
+    }
+
+    @Test
+    void getTrainerReportsError() throws Exception {
+        when(client.getTrainer("999")).thenThrow(new IllegalStateException("SportLife API error"));
+
+        JsonNode result = objectMapper.readTree(tools.getTrainer("999"));
+
+        assertThat(result.path("error").asText()).contains("SportLife API error");
     }
 
     @Test

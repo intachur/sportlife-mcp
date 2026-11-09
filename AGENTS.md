@@ -29,9 +29,11 @@ user-agent: SportLife/3.9.10
 | GET | `/handh/api/v1.8/club_card` | договор: `data.current_contracts[].contract_remain_days`, `remain_days`, `finish_date` |
 | POST | `/handh/api/v1.2/schedule?type=club` | расписание на 7 дней, body `{"club_id":"6"}` |
 | GET | `/handh/api/v1.7/masseurs?limit=30&offset=0&query=&type=club&club_id=6` | специалисты по уходу за телом |
+| GET | `/handh/api/v1.2/masseur?masseur_id=<id>` | карточка специалиста: `name`, `description`, `resume`, `price`, `schedule[].schedule_club[].intervals[]` со свободными слотами |
 | GET | `/handh/api/v1.9/dashboard` | сводка (дублирует договор, клубы, специалистов) |
 | GET | `/handh/api/v1/profile` | профиль |
-| POST | `/handh/api/v1.5/trainer?limit=30&offset=0` | персональные тренеры |
+| POST | `/handh/api/v1.5/trainer?limit=30&offset=0` | персональные тренеры; body-фильтр `{"activity_group_typy_ids":["3"],"type":"personal","query":"","woman":true,"man":true,"club_ids":["6"]}` |
+| GET | `/handh/api/v1.5/trainer/<id>` | карточка тренера: `cvSpeciality`, `cvEducation`, `cvExperience`, `clubs`, `nearest_activities` |
 
 Ответы имеют конверт `{"code":1,"message":"","list":[...]}` или `{"code":1,"data":{...}}`. `code != 1` — ошибка API.
 
@@ -44,7 +46,7 @@ ClubTools (@Tool) → VisitorService / ClubEventService → SportlifeClient (Res
                                                         → Repository (JdbcTemplate) → PostgreSQL (Flyway)
 ```
 
-- `tools/ClubTools` — 5 MCP-инструментов, формируют компактный JSON, ошибки возвращают как `{"error": "..."}`.
+- `tools/ClubTools` — 8 MCP-инструментов, формируют компактный JSON, ошибки возвращают как `{"error": "..."}`.
 - `service/VisitorService` — текущие посетители, сохранение снимков, статистика.
 - `service/ClubEventService` — мероприятия на сегодня + upsert в БД.
 - `client/SportlifeClient` — HTTP, парсинг `JsonNode`, проверка `code == 1`, ретраи.
@@ -58,8 +60,11 @@ ClubTools (@Tool) → VisitorService / ClubEventService → SportlifeClient (Res
 |---|---|---|
 | `get_current_visitors` | `GET /handh/api/v1/club` | да, `visitor_snapshot` |
 | `get_contract_remaining_days` | `GET /handh/api/v1.8/club_card` | нет |
-| `get_today_club_events` | `POST /handh/api/v1.2/schedule` | да, `club_event` |
+| `get_today_club_events(date)` | `POST /handh/api/v1.2/schedule` | да, `club_event` |
 | `get_body_care_specialists` | `GET /handh/api/v1.7/masseurs` | нет |
+| `get_specialist_schedule(masseurId, date)` | `GET /handh/api/v1.2/masseur` | нет |
+| `get_trainers()` | `POST /handh/api/v1.5/trainer` | нет |
+| `get_trainer(trainerId)` | `GET /handh/api/v1.5/trainer/<id>` | нет |
 | `get_visitor_statistics(period)` | PostgreSQL | нет |
 
 `period`: `hour`, `day`, `week`. Возвращает `count`, `average`, `min`, `max`, `first`, `last`, `points[]`.
